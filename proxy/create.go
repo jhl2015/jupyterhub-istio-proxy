@@ -45,7 +45,7 @@ func (i *IstioClient) createVirtualService(r route) error {
 	destinationHost, destinationPort := r.splitTarget()
 	destinationHost = fmt.Sprintf("%s.%s.svc.%s", destinationHost, i.namespace, i.clusterDomain)
 	vsName := i.virtualServiceNameWithPrefix(r.RouteSpec)
-	vs := virtualService(vsName, i.gateway, i.host, destinationHost, destinationPort, r.RouteSpec, annotations)
+	vs := virtualService(vsName, i.gateway, i.host, destinationHost, destinationPort, r.RouteSpec, annotations, i.baseUrl)
 
 	_, err = i.NetworkingV1alpha3().VirtualServices(i.namespace).Create(context.Background(), vs, metav1.CreateOptions{})
 	if err != nil {
@@ -108,7 +108,13 @@ func warmup(name string, url string) error {
 	return backoff.Retry(fetchURL, bf)
 }
 
-func virtualService(name string, gateway string, host string, destinationHost string, destinationPort uint32, route string, annotations map[string]string) *networkingv1alpha3.VirtualService {
+func virtualService(name string, gateway string, host string, destinationHost string, destinationPort uint32, route string, annotations map[string]string, baseUrl string) *networkingv1alpha3.VirtualService {
+	prefix := route
+	// change prefix to "/" for hub virtual service if there is baseurl
+	// this serves as a default/catch-all route
+	if baseUrl != "" && destinationPort == 8081 {
+		prefix = "/"
+	}
 	return &networkingv1alpha3.VirtualService{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
@@ -123,7 +129,7 @@ func virtualService(name string, gateway string, host string, destinationHost st
 						{
 							Uri: &v1alpha3.StringMatch{
 								MatchType: &v1alpha3.StringMatch_Prefix{
-									Prefix: route,
+									Prefix: prefix,
 								},
 							},
 						},

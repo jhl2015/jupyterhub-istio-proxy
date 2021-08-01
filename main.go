@@ -47,6 +47,7 @@ const (
 	virtualServicePrefixDefault = "jupyter"
 	clusterDomainEnvKey         = "CLUSTER_DOMAIN"
 	clusterDomainDefault        = "cluster.local"
+	baseUrlEnvKey               = "JUPYTERHUB_BASE_URL"
 )
 
 func main() {
@@ -82,8 +83,9 @@ func main() {
 	if clusterDomain, ok = os.LookupEnv(clusterDomainEnvKey); !ok || clusterDomain == "" {
 		clusterDomain = clusterDomainDefault
 	}
+	baseUrl := os.Getenv(baseUrlEnvKey)
 	var ic proxy.Istioer
-	ic, err = proxy.NewIstioClient(namespace, gateway, subDomainHost, waitForWarmup, vsNamePrefix, clusterDomain)
+	ic, err = proxy.NewIstioClient(namespace, gateway, subDomainHost, waitForWarmup, vsNamePrefix, clusterDomain, baseUrl)
 	if err != nil {
 		log.Fatalf("failed to create istio client: %s\n", err)
 	}

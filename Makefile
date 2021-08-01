@@ -1,3 +1,21 @@
+export GO111MODULE=on
+DOCKER_IMAGE?=deploy-service:${VERSION}
+
+all: lint test install
+
+install:
+	@echo "building and installing..."
+	@GOOS=${GOOS} CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} go install --installsuffix cgo --ldflags="-w  -s" ${GOMODFLAG} ./cmd/$*
+
+build: 
+	@echo "building..."
+	@go build ${GOMODFLAG} ${PACKAGES}
+
+docker-image:
+	echo "Building docker image: ${DOCKER_IMAGE}"
+	docker build -t ${DOCKER_IMAGE} -f Dockerfile ${PWD}
+	docker tag ${DOCKER_IMAGE} ${DOCKER_IMAGE_LATEST}
+
 .PHONY: test
 test: lint
 	go test -coverprofile=coverage.txt -covermode=atomic -race ./...
